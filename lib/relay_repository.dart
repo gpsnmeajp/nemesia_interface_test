@@ -1,13 +1,10 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
-import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nostr/nostr.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:web_socket_channel/status.dart' as status;
 
 import 'nip07_mock.dart' if (dart.library.html) 'nip07_web.dart';
 
@@ -22,6 +19,7 @@ typedef EventId = String;
 abstract class Subscription with _$Subscription {
   const factory Subscription({
     required SubscriptionId id,
+    required Filter filter,
     required Function(SubscriptionId) eoseCallback,
   }) = _Subscription;
 }
@@ -70,11 +68,11 @@ class RelayRepository implements RelayRepositoryInterface {
   // イベント受信バッファ(サブスクID別、リレー別イベント)
   final Map<SubscriptionId, ReceivingEvents> _eventBuffer = {};
 
-  // キャッシュ
-  final Map<EventId, EventWithRelays> _eventCache = {};
-
   // サブスクリプションID - Event callback
   final Map<SubscriptionId, Subscription> _subscriptions = {};
+
+  // メタデータキャッシュ
+  final Map<Pubkey, Metadata> _metadataCache = {};
 
   // 名前付きコンストラクタ(プライベート)
   RelayRepository._() {
@@ -107,8 +105,7 @@ class RelayRepository implements RelayRepositoryInterface {
   }
 
   // 単発リクエストを実施
-  Future<Map<EventId, EventWithRelays>?> _oneshotRequest(
-      List<Filter> filters) async {
+  Future<Map<EventId, EventWithRelays>?> _oneshotRequest(Filter filter) async {
     debugPrint("[oneshotRequest] Start");
     var completer = Completer<Map<EventId, EventWithRelays>?>();
     var isEOSE = false;
@@ -124,14 +121,14 @@ class RelayRepository implements RelayRepositoryInterface {
         return;
       }
 
-      // データを受信中であり、最後に受信してから100ms以内なら、追加で100ms待つ
+      // データを受信中であり、最後に受信してから200ms以内なら、追加で200ms待つ
       if (_eventBuffer[subscriptionId] != null &&
           (DateTime.now()
                   .difference(_eventBuffer[subscriptionId]!.lastReceived) <
-              const Duration(milliseconds: 100))) {
+              const Duration(milliseconds: 200))) {
         debugPrint(
             "[oneshotRequest] Contine: $subscriptionId ${_eventBuffer[subscriptionId]!.lastReceived}");
-        Future.delayed(const Duration(milliseconds: 100), onComplete);
+        Future.delayed(const Duration(milliseconds: 200), onComplete);
         return;
       }
 
@@ -164,11 +161,6 @@ class RelayRepository implements RelayRepositoryInterface {
           });
         });
 
-        // イベントキャッシュに格納
-        events.forEach((eventId, event) {
-          _eventCache[eventId] = event;
-        });
-
         // 受信バッファから消去
         _eventBuffer.remove(subscriptionId);
 
@@ -192,19 +184,20 @@ class RelayRepository implements RelayRepositoryInterface {
     // callbackを登録
     _subscriptions[subscriptionId] = Subscription(
       id: subscriptionId,
+      filter: filter,
       eoseCallback: (String subscriptionId) {
         // EOSE
         debugPrint("[oneshotRequest] EOSE: $subscriptionId");
         isEOSE = true;
-        // 100ms後に確定処理
-        Future.delayed(const Duration(milliseconds: 100), () {
+        // 200ms後に確定処理
+        Future.delayed(const Duration(milliseconds: 200), () {
           onComplete();
         });
       },
     );
 
     // サブスクリプションを開始
-    Request request = Request(subscriptionId, filters);
+    Request request = Request(subscriptionId, [filter]);
     _sendAllRelay(request.serialize());
 
     // 3秒後に強制タイムアウト
@@ -230,6 +223,44 @@ class RelayRepository implements RelayRepositoryInterface {
           e = EncryptedDirectMessage(data);
         }
 
+        // Subscriptionに存在するかチェック
+        if (_subscriptions[e.subscriptionId] == null) {
+          // 存在しないので(リレーが壊れてる?)無視する
+          debugPrint(
+              "[onWebsocketReceived] REJECT: not subscription ${e.subscriptionId}");
+          return;
+        }
+
+        var filter = _subscriptions[e.subscriptionId]!.filter;
+
+        // 対象のkindsか調べます
+        if (!filter.kinds!.contains(e.kind)) {
+          // 対象ではない
+          debugPrint(
+              "[onWebsocketReceived] REJECT: not kind ${e.kind}  ${e.subscriptionId}");
+          return;
+        }
+
+        // Filterにauthorsが含まれる場合、対象のpubkeyか調べます
+        if (filter.authors != null) {
+          // 対象ではない
+          if (!filter.authors!.contains(e.pubkey)) {
+            debugPrint(
+                "[onWebsocketReceived] REJECT: not authors ${e.pubkey}  ${e.subscriptionId}");
+            return;
+          }
+        }
+
+        // Filterにidsが含まれる場合、対象のidか調べます
+        if (filter.ids != null) {
+          // 対象ではない
+          if (!filter.ids!.contains(e.id)) {
+            debugPrint(
+                "[onWebsocketReceived] REJECT: not ids ${e.id}  ${e.subscriptionId}");
+            return;
+          }
+        }
+
         //リレーバッファがない場合、作る
         if (_eventBuffer[e.subscriptionId!] == null) {
           _eventBuffer[e.subscriptionId!] =
@@ -239,10 +270,12 @@ class RelayRepository implements RelayRepositoryInterface {
         if (_eventBuffer[e.subscriptionId!]!.eventsOnRelays[relayUrl] == null) {
           _eventBuffer[e.subscriptionId!]!.eventsOnRelays[relayUrl] = {};
         }
+
         // イベントをリレー別バッファに詰める
         _eventBuffer[e.subscriptionId!]!.eventsOnRelays[relayUrl]![e.id] =
             EventWithJson(event: e, json: data[1]);
         _eventBuffer[e.subscriptionId!]!.lastReceived = DateTime.now();
+        debugPrint("OK ${e.subscriptionId}");
         return;
       }
       debugPrint('[onWebsocketReceived] Received event($relayUrl): $payload');
@@ -323,7 +356,7 @@ class RelayRepository implements RelayRepositoryInterface {
   // -----------------------
 
   @override
-  void connect() {
+  Future<void> connect() async {
     // すでに接続済みなら全部切断する
     _webSocketChannelList.forEach((r, w) {
       w.sink.close();
@@ -341,6 +374,9 @@ class RelayRepository implements RelayRepositoryInterface {
       _webSocketChannelList[r] = w;
     }
     debugPrint("Connect");
+
+    // 公開鍵の初回取得処理(NIP-07キャッシュを兼ねて)
+    await getMyPubkey();
   }
 
   @override
@@ -378,18 +414,16 @@ class RelayRepository implements RelayRepositoryInterface {
     DateTime? until,
     int? limit,
   }) async {
-    var events = await _oneshotRequest([
-      Filter(
-        kinds: [1],
-        ids: ids,
-        authors: authers,
-        e: e,
-        p: p,
-        since: since != null ? since.millisecondsSinceEpoch ~/ 1000 : null,
-        until: until != null ? until.millisecondsSinceEpoch ~/ 1000 : null,
-        limit: limit,
-      )
-    ]);
+    var events = await _oneshotRequest(Filter(
+      kinds: [1],
+      ids: ids,
+      authors: authers,
+      e: e,
+      p: p,
+      since: since != null ? since.millisecondsSinceEpoch ~/ 1000 : null,
+      until: until != null ? until.millisecondsSinceEpoch ~/ 1000 : null,
+      limit: limit,
+    ));
 
     // データがある
     if (events != null) {
@@ -434,6 +468,8 @@ class RelayRepository implements RelayRepositoryInterface {
         }
       });
 
+      // 日時順に並び替え
+      notes.sort(((a, b) => a.createdAt.compareTo(b.createdAt)));
       return notes;
     } else {
       // データがない
@@ -449,19 +485,35 @@ class RelayRepository implements RelayRepositoryInterface {
 
   @override
   Future<Map<Pubkey, Metadata>> getMetadatas(List<String>? pubkeys) async {
-    var mypubkey = await getMyPubkey();
-    if (mypubkey == null) {
-      return {};
-    }
-    pubkeys ??= [mypubkey];
-    var autherevents = await _oneshotRequest([
-      Filter(
-        kinds: [0],
-        authors: pubkeys,
-      )
-    ]);
-
     var output = <Pubkey, Metadata>{};
+
+    // 対象がない場合、自分を対象にする
+    if (pubkeys == null) {
+      var mypubkey = await getMyPubkey();
+      if (mypubkey == null) {
+        return {};
+      }
+      pubkeys = [mypubkey];
+    }
+
+    // キャッシュ
+    List<Pubkey> nonCachedPubkeys = [];
+    for (var p in pubkeys) {
+      if (_metadataCache[p] != null) {
+        // キャッシュ済みのものは出力に反映する
+        output[p] = _metadataCache[p]!;
+      } else {
+        // 未キャッシュのものは取得対象にする
+        nonCachedPubkeys.add(p);
+      }
+    }
+    debugPrint("[getMetadatas] Cache hit: ${output.length}");
+
+    // 取得
+    var autherevents = await _oneshotRequest(Filter(
+      kinds: [0],
+      authors: nonCachedPubkeys,
+    ));
     autherevents?.forEach((EventId id, EventWithRelays e) {
       try {
         Map<String, dynamic> data = jsonDecode(e.event.event.content);
@@ -486,10 +538,12 @@ class RelayRepository implements RelayRepositoryInterface {
           displayName: data["display_name"],
         );
         output[e.event.event.pubkey] = metadata;
+        _metadataCache[e.event.event.pubkey] = metadata; //キャッシュにも保存
       } catch (e) {
         debugPrint("[getMetadatas] $e");
       }
     });
+
     return output;
   }
 

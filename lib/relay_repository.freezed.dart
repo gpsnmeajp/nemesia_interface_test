@@ -17,6 +17,7 @@ final _privateConstructorUsedError = UnsupportedError(
 /// @nodoc
 mixin _$Subscription {
   String get id => throw _privateConstructorUsedError;
+  Filter get filter => throw _privateConstructorUsedError;
   dynamic Function(String) get eoseCallback =>
       throw _privateConstructorUsedError;
 
@@ -31,7 +32,7 @@ abstract class $SubscriptionCopyWith<$Res> {
           Subscription value, $Res Function(Subscription) then) =
       _$SubscriptionCopyWithImpl<$Res, Subscription>;
   @useResult
-  $Res call({String id, dynamic Function(String) eoseCallback});
+  $Res call({String id, Filter filter, dynamic Function(String) eoseCallback});
 }
 
 /// @nodoc
@@ -48,6 +49,7 @@ class _$SubscriptionCopyWithImpl<$Res, $Val extends Subscription>
   @override
   $Res call({
     Object? id = null,
+    Object? filter = null,
     Object? eoseCallback = null,
   }) {
     return _then(_value.copyWith(
@@ -55,6 +57,10 @@ class _$SubscriptionCopyWithImpl<$Res, $Val extends Subscription>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
+      filter: null == filter
+          ? _value.filter
+          : filter // ignore: cast_nullable_to_non_nullable
+              as Filter,
       eoseCallback: null == eoseCallback
           ? _value.eoseCallback
           : eoseCallback // ignore: cast_nullable_to_non_nullable
@@ -71,7 +77,7 @@ abstract class _$$_SubscriptionCopyWith<$Res>
       __$$_SubscriptionCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String id, dynamic Function(String) eoseCallback});
+  $Res call({String id, Filter filter, dynamic Function(String) eoseCallback});
 }
 
 /// @nodoc
@@ -86,6 +92,7 @@ class __$$_SubscriptionCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
+    Object? filter = null,
     Object? eoseCallback = null,
   }) {
     return _then(_$_Subscription(
@@ -93,6 +100,10 @@ class __$$_SubscriptionCopyWithImpl<$Res>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
+      filter: null == filter
+          ? _value.filter
+          : filter // ignore: cast_nullable_to_non_nullable
+              as Filter,
       eoseCallback: null == eoseCallback
           ? _value.eoseCallback
           : eoseCallback // ignore: cast_nullable_to_non_nullable
@@ -104,16 +115,19 @@ class __$$_SubscriptionCopyWithImpl<$Res>
 /// @nodoc
 
 class _$_Subscription with DiagnosticableTreeMixin implements _Subscription {
-  const _$_Subscription({required this.id, required this.eoseCallback});
+  const _$_Subscription(
+      {required this.id, required this.filter, required this.eoseCallback});
 
   @override
   final String id;
+  @override
+  final Filter filter;
   @override
   final dynamic Function(String) eoseCallback;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'Subscription(id: $id, eoseCallback: $eoseCallback)';
+    return 'Subscription(id: $id, filter: $filter, eoseCallback: $eoseCallback)';
   }
 
   @override
@@ -122,6 +136,7 @@ class _$_Subscription with DiagnosticableTreeMixin implements _Subscription {
     properties
       ..add(DiagnosticsProperty('type', 'Subscription'))
       ..add(DiagnosticsProperty('id', id))
+      ..add(DiagnosticsProperty('filter', filter))
       ..add(DiagnosticsProperty('eoseCallback', eoseCallback));
   }
 
@@ -131,12 +146,13 @@ class _$_Subscription with DiagnosticableTreeMixin implements _Subscription {
         (other.runtimeType == runtimeType &&
             other is _$_Subscription &&
             (identical(other.id, id) || other.id == id) &&
+            (identical(other.filter, filter) || other.filter == filter) &&
             (identical(other.eoseCallback, eoseCallback) ||
                 other.eoseCallback == eoseCallback));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, id, eoseCallback);
+  int get hashCode => Object.hash(runtimeType, id, filter, eoseCallback);
 
   @JsonKey(ignore: true)
   @override
@@ -148,10 +164,13 @@ class _$_Subscription with DiagnosticableTreeMixin implements _Subscription {
 abstract class _Subscription implements Subscription {
   const factory _Subscription(
       {required final String id,
+      required final Filter filter,
       required final dynamic Function(String) eoseCallback}) = _$_Subscription;
 
   @override
   String get id;
+  @override
+  Filter get filter;
   @override
   dynamic Function(String) get eoseCallback;
   @override

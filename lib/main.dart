@@ -11,13 +11,16 @@ class Model extends ChangeNotifier {
   final RelayRepository _relayRepository = RelayRepository();
   Model() {
     print("Connect");
-    _relayRepository.connect();
     Future.sync(() async {
+      await _relayRepository.connect();
       var notes = await _relayRepository.getTextNotes(limit: 10);
+      /*
       for (var note in notes) {
         debugPrint("---");
         debugPrint(note.toString());
       }
+      */
+      var notes2 = await _relayRepository.getTextNotes(limit: 15);
     });
   }
 }

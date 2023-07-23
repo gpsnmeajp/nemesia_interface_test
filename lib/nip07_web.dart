@@ -14,12 +14,17 @@ external _nip07getPublicKey();
 external _nip07signEvent(String event);
 
 class Nip07 {
+  static String? pubkeyCache;
+
   static Future<String?> getPublicKey() async {
-    String pubkey = await promiseToFuture(_nip07getPublicKey());
-    if (pubkey == "") {
-      return null;
+    if (pubkeyCache == null) {
+      String pubkey = await promiseToFuture(_nip07getPublicKey());
+      if (pubkey == "") {
+        return null;
+      }
+      pubkeyCache = pubkey;
     }
-    return pubkey;
+    return pubkeyCache;
   }
 
   static Future<Nip07Event?> signEvent(Nip07Event event) async {

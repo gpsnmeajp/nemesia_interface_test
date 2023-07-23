@@ -121,7 +121,7 @@ abstract class RecommendServer with _$RecommendServer {
 // リレーから情報を取ってくるためのIF
 class RelayRepositoryInterface {
   // リレーに接続・再接続する
-  void connect() {
+  Future<void> connect() async {
     throw UnimplementedError();
   }
 
