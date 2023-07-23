@@ -70,14 +70,32 @@ class RelayRepository implements RelayRepositoryInterface {
 
   // 名前付きコンストラクタ(プライベート)
   RelayRepository._() {
-    // 100ms周期タイマー
-    Future.delayed(const Duration(milliseconds: 100), _onPeriodicTimer);
+    // 周期タイマー
+    Timer.periodic(const Duration(seconds: 15), _onPeriodicTimer);
   }
 
   // 周期イベント処理
-  void _onPeriodicTimer() async {
-    // 次のタイマーをセットする
-    Future.delayed(const Duration(milliseconds: 100), _onPeriodicTimer);
+  void _onPeriodicTimer(Timer timer) async {
+    // 接続状態チェックと、自動再接続
+    _webSocketChannelList.forEach((r, w) {
+      if (w.closeCode != null) {
+        // 既存の接続を閉じる
+        try {
+          w.sink.close();
+        } catch (e) {
+          // Do noting
+        }
+
+        // 接続を開始する
+        var s = WebSocketChannel.connect(Uri.parse(r));
+        s.stream.listen((message) {
+          // なにか受信した: 受信物はすべて同じところに流し込む
+          _onWebsocketReceived(r, message);
+        });
+        // 接続管理する
+        _webSocketChannelList[r] = s;
+      }
+    });
   }
 
   // 単発リクエストを実施
