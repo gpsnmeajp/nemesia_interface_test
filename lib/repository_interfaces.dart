@@ -144,13 +144,14 @@ class RelayRepositoryInterface {
   // 指定のメモ(あるいはタイムライン)を取得する
   // NIP-01, kind 1
   Future<List<TextNote>> getTextNotes({
-    List<String>? ids,
-    List<String>? authers,
-    List<String>? e,
-    List<String>? p,
+    List<String>? ids, //NIP-19
+    List<String>? authers, //NIP-19
+    List<String>? e, //⚠non-NIP-19
+    List<String>? p, //⚠non-NIP-19
     DateTime? since,
     DateTime? until,
     int? limit,
+    List<String>? relays,
   }) async {
     throw UnimplementedError();
   }

@@ -82,6 +82,7 @@ class RelayRepository implements RelayRepositoryInterface {
 
   // 周期イベント処理
   void _onPeriodicTimer(Timer timer) async {
+    debugPrint("[onPeriodicTimer] Start");
     // 接続状態チェックと、自動再接続
     _webSocketChannelList.forEach((r, w) {
       if (w.closeCode != null) {
@@ -105,7 +106,8 @@ class RelayRepository implements RelayRepositoryInterface {
   }
 
   // 単発リクエストを実施
-  Future<Map<EventId, EventWithRelays>?> _oneshotRequest(Filter filter) async {
+  Future<Map<EventId, EventWithRelays>?> _oneshotRequest(
+      Filter filter, List<RelayUrl>? relays) async {
     debugPrint("[oneshotRequest] Start");
     var completer = Completer<Map<EventId, EventWithRelays>?>();
     var isEOSE = false;
@@ -131,7 +133,7 @@ class RelayRepository implements RelayRepositoryInterface {
         Future.delayed(const Duration(milliseconds: 200), onComplete);
         return;
       }
-
+      debugPrint("[onComplete] Start");
       // サブスク解除
       // サブスクリプションを停止
       _subscriptions.remove(subscriptionId);
@@ -198,7 +200,14 @@ class RelayRepository implements RelayRepositoryInterface {
 
     // サブスクリプションを開始
     Request request = Request(subscriptionId, [filter]);
-    _sendAllRelay(request.serialize());
+
+    if (relays != null) {
+      for (var relayUrl in relays) {
+        _sendRelay(relayUrl, request.serialize());
+      }
+    } else {
+      _sendAllRelay(request.serialize());
+    }
 
     // 3秒後に強制タイムアウト
     Future.delayed(const Duration(seconds: 3), () {
@@ -301,24 +310,37 @@ class RelayRepository implements RelayRepositoryInterface {
 
   // すべてのリレーに送信する
   void _sendAllRelay(dynamic data) {
-    debugPrint("Send");
+    debugPrint("[_sendAllRelay] SendAll");
     _webSocketChannelList.forEach((r, w) {
       w.sink.add(data);
     });
   }
 
-  // 状況に応じて取得手段を使い分けて、公開鍵を取得
+  // 特定ののリレーに送信する
+  void _sendRelay(RelayUrl url, dynamic data) {
+    debugPrint("[_sendRelay] Send");
+    _webSocketChannelList[url]?.sink.add(data);
+  }
+
+  // 状況に応じて取得手段を使い分けて、NIP-19公開鍵を取得
   Future<Pubkey?> getMyPubkey() async {
+    late var pubkeyHex;
     if (keychain == null) {
-      return await Nip07.getPublicKey();
+      pubkeyHex = await Nip07.getPublicKey();
     } else {
-      return keychain?.public;
+      pubkeyHex = keychain?.public;
     }
+    if (pubkeyHex == null) {
+      return null;
+    }
+    return Nip19.encodePubkey(pubkeyHex);
   }
 
   // 状況に応じて署名手段を使い分けて、署名して送信
   Future<void> signAndSend(
       int kind, List<List<String>> tags, String content) async {
+    debugPrint("[signAndSend] Start");
+
     Event event = Event.partial();
     event.createdAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     event.content = content;
@@ -357,6 +379,7 @@ class RelayRepository implements RelayRepositoryInterface {
 
   @override
   Future<void> connect() async {
+    debugPrint("[connect] Start");
     // すでに接続済みなら全部切断する
     _webSocketChannelList.forEach((r, w) {
       w.sink.close();
@@ -373,7 +396,7 @@ class RelayRepository implements RelayRepositoryInterface {
       // 接続管理する
       _webSocketChannelList[r] = w;
     }
-    debugPrint("Connect");
+    debugPrint("[connect] Connected");
 
     // 公開鍵の初回取得処理(NIP-07キャッシュを兼ねて)
     await getMyPubkey();
@@ -392,9 +415,11 @@ class RelayRepository implements RelayRepositoryInterface {
 
   @override
   void setSelfKey(String? privateKey) {
+    debugPrint("[setSelfKey] Start");
     if (privateKey == null) {
-      // NIP-7にする予定
-      throw UnimplementedError();
+      // NIP-07に任せる
+      keychain = null;
+      return;
     }
     var privKey = Nip19.decodePrivkey(privateKey);
     if (privKey != "") {
@@ -406,24 +431,37 @@ class RelayRepository implements RelayRepositoryInterface {
 
   @override
   Future<List<TextNote>> getTextNotes({
-    List<String>? ids,
-    List<String>? authers,
-    List<String>? e,
-    List<String>? p,
+    List<String>? ids, //NIP-19
+    List<String>? authers, //NIP-19
+    List<String>? e, //⚠non-NIP-19
+    List<String>? p, //⚠non-NIP-19
     DateTime? since,
     DateTime? until,
     int? limit,
+    List<String>? relays,
   }) async {
-    var events = await _oneshotRequest(Filter(
-      kinds: [1],
-      ids: ids,
-      authors: authers,
-      e: e,
-      p: p,
-      since: since != null ? since.millisecondsSinceEpoch ~/ 1000 : null,
-      until: until != null ? until.millisecondsSinceEpoch ~/ 1000 : null,
-      limit: limit,
-    ));
+    debugPrint("[getTextNotes] Start");
+    List<String>? idsHex;
+    List<String>? authersHex;
+    if (ids != null) {
+      idsHex = ids.map((e) => Nip19.decodeNote(e)).toList();
+    }
+    if (authers != null) {
+      authersHex = authers.map((e) => Nip19.decodePubkey(e)).toList();
+    }
+
+    var events = await _oneshotRequest(
+        Filter(
+          kinds: [1],
+          ids: idsHex,
+          authors: authersHex,
+          e: e,
+          p: p,
+          since: since != null ? since.millisecondsSinceEpoch ~/ 1000 : null,
+          until: until != null ? until.millisecondsSinceEpoch ~/ 1000 : null,
+          limit: limit,
+        ),
+        relays);
 
     // データがある
     if (events != null) {
@@ -478,13 +516,45 @@ class RelayRepository implements RelayRepositoryInterface {
   }
 
   @override
-  Future<List<Pubkey>> getContactList(String pubkey) {
-    // TODO: implement getContactList
-    throw UnimplementedError();
+  Future<List<Pubkey>> getContactList(String pubkey) async {
+    debugPrint("[getContactList] Start");
+    var events = await _oneshotRequest(
+        Filter(
+          kinds: [3],
+          authors: [Nip19.decodePubkey(pubkey)],
+          limit: 5,
+        ),
+        null);
+
+    List<Event> contactListEvents = List.empty(growable: true);
+    events?.forEach((EventId id, EventWithRelays event) {
+      contactListEvents.add(event.event.event);
+    });
+    // 最新順に並べる
+    contactListEvents.sort(((a, b) => b.createdAt.compareTo(a.createdAt)));
+
+    if (contactListEvents.isEmpty) {
+      return [];
+    }
+
+    // 最も最新のものを取り出す
+    List<Pubkey> pubkeys = List.empty(growable: true);
+    var newestContactList = contactListEvents[0];
+    newestContactList.tags.forEach((element) {
+      try {
+        if (element[0] == "p") {
+          pubkeys.add(Nip19.encodePubkey(element[1]));
+        }
+      } catch (e) {
+        // Do nothing
+      }
+    });
+    return pubkeys;
   }
 
   @override
   Future<Map<Pubkey, Metadata>> getMetadatas(List<String>? pubkeys) async {
+    debugPrint("[getMetadatas] Start");
     var output = <Pubkey, Metadata>{};
 
     // 対象がない場合、自分を対象にする
@@ -493,7 +563,8 @@ class RelayRepository implements RelayRepositoryInterface {
       if (mypubkey == null) {
         return {};
       }
-      pubkeys = [mypubkey];
+      var mypubkeyHex = Nip19.decodePubkey(mypubkey);
+      pubkeys = [mypubkeyHex];
     }
 
     // キャッシュ
@@ -510,10 +581,12 @@ class RelayRepository implements RelayRepositoryInterface {
     debugPrint("[getMetadatas] Cache hit: ${output.length}");
 
     // 取得
-    var autherevents = await _oneshotRequest(Filter(
-      kinds: [0],
-      authors: nonCachedPubkeys,
-    ));
+    var autherevents = await _oneshotRequest(
+        Filter(
+          kinds: [0],
+          authors: nonCachedPubkeys,
+        ),
+        null);
     autherevents?.forEach((EventId id, EventWithRelays e) {
       try {
         Map<String, dynamic> data = jsonDecode(e.event.event.content);
@@ -549,30 +622,35 @@ class RelayRepository implements RelayRepositoryInterface {
 
   @override
   Future<List<RecommendServer>> getRecommendServer(String pubkey) {
+    debugPrint("[getRecommendServer] Start");
     // TODO: implement getRecommendServer
     throw UnimplementedError();
   }
 
   @override
   Future<void> postMyMetadata(Metadata metadata) {
+    debugPrint("[postMyMetadata] Start");
     // TODO: implement postMyMetadata
     throw UnimplementedError();
   }
 
   @override
   Future<void> postMyTextNote(String content, List<List<String>> tags) {
+    debugPrint("[postMyTextNote] Start");
     // TODO: implement postMyTextNote
     throw UnimplementedError();
   }
 
   @override
   Future<void> postReaction(String noteId, String? reaction, String? emojiUrl) {
+    debugPrint("[postReaction] Start");
     // TODO: implement postReaction
     throw UnimplementedError();
   }
 
   @override
   Future<void> postRepost(TextNote textNote) {
+    debugPrint("[postRepost] Start");
     // TODO: implement postRepost
     throw UnimplementedError();
   }

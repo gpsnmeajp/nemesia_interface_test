@@ -10,17 +10,31 @@ void main() {
 class Model extends ChangeNotifier {
   final RelayRepository _relayRepository = RelayRepository();
   Model() {
-    print("Connect");
+    print("[Model] Connect");
     Future.sync(() async {
       await _relayRepository.connect();
-      var notes = await _relayRepository.getTextNotes(limit: 10);
-      /*
-      for (var note in notes) {
-        debugPrint("---");
+
+      // フォロー取得
+      var pubkeys = await _relayRepository
+          .getContactList(await _relayRepository.getMyPubkey() ?? "");
+      for (var note in pubkeys) {
         debugPrint(note.toString());
       }
-      */
-      var notes2 = await _relayRepository.getTextNotes(limit: 15);
+      debugPrint("↓フォロー");
+      var notes =
+          await _relayRepository.getTextNotes(limit: 10, authers: pubkeys);
+      for (var note in notes) {
+        debugPrint("---");
+        debugPrint(
+            "${note.autherMetadata?.displayName ?? ""}: ${note.content}");
+      }
+      debugPrint("↓グローバル");
+      var notesg = await _relayRepository.getTextNotes(limit: 10);
+      for (var note in notesg) {
+        debugPrint("---");
+        debugPrint(
+            "${note.autherMetadata?.displayName ?? ""}: ${note.content}");
+      }
     });
   }
 }
