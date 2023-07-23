@@ -26,10 +26,18 @@ abstract class Subscription with _$Subscription {
   }) = _Subscription;
 }
 
+@freezed
+abstract class EventWithJson with _$EventWithJson {
+  const factory EventWithJson({
+    required Event event,
+    required String json,
+  }) = _EventWithJson;
+}
+
 @unfreezed
 abstract class ReceivingEvents with _$ReceivingEvents {
   factory ReceivingEvents({
-    required Map<RelayUrl, Map<EventId, Event>> eventsOnRelays,
+    required Map<RelayUrl, Map<EventId, EventWithJson>> eventsOnRelays,
     required DateTime lastReceived,
   }) = _ReceivingEvents;
 }
@@ -37,7 +45,7 @@ abstract class ReceivingEvents with _$ReceivingEvents {
 @Freezed(makeCollectionsUnmodifiable: false)
 abstract class EventWithRelays with _$EventWithRelays {
   const factory EventWithRelays({
-    required Event event,
+    required EventWithJson event,
     required List<RelayUrl> relays,
   }) = _EventWithRelays;
 }
@@ -232,7 +240,8 @@ class RelayRepository implements RelayRepositoryInterface {
           _eventBuffer[e.subscriptionId!]!.eventsOnRelays[relayUrl] = {};
         }
         // イベントをリレー別バッファに詰める
-        _eventBuffer[e.subscriptionId!]!.eventsOnRelays[relayUrl]![e.id] = e;
+        _eventBuffer[e.subscriptionId!]!.eventsOnRelays[relayUrl]![e.id] =
+            EventWithJson(event: e, json: data[1]);
         _eventBuffer[e.subscriptionId!]!.lastReceived = DateTime.now();
         return;
       }
@@ -265,6 +274,16 @@ class RelayRepository implements RelayRepositoryInterface {
     });
   }
 
+  // 状況に応じて取得手段を使い分けて、公開鍵を取得
+  Future<Pubkey?> getMyPubkey() async {
+    if (keychain == null) {
+      return await Nip07.getPublicKey();
+    } else {
+      return keychain?.public;
+    }
+  }
+
+  // 状況に応じて署名手段を使い分けて、署名して送信
   Future<void> signAndSend(
       int kind, List<List<String>> tags, String content) async {
     Event event = Event.partial();
@@ -287,7 +306,7 @@ class RelayRepository implements RelayRepositoryInterface {
       event.pubkey = (await Nip07.getPublicKey())!;
       var result = await Nip07.signEvent(nip07);
       event.id = result!.id;
-      event.sig = result!.sig;
+      event.sig = result.sig;
     } else {
       event.pubkey = keychain!.public;
       event.id = event.getEventId();
@@ -350,28 +369,128 @@ class RelayRepository implements RelayRepositoryInterface {
   }
 
   @override
-  Future<List<TextNote>> getTextNotes(
-      List<String>? ids,
-      List<String>? authers,
-      List<String>? e,
-      List<String>? p,
-      DateTime? since,
-      DateTime? until,
-      int? limit) {
-    // TODO: implement getTextNotes
-    throw UnimplementedError();
+  Future<List<TextNote>> getTextNotes({
+    List<String>? ids,
+    List<String>? authers,
+    List<String>? e,
+    List<String>? p,
+    DateTime? since,
+    DateTime? until,
+    int? limit,
+  }) async {
+    var events = await _oneshotRequest([
+      Filter(
+        kinds: [1],
+        ids: ids,
+        authors: authers,
+        e: e,
+        p: p,
+        since: since != null ? since.millisecondsSinceEpoch ~/ 1000 : null,
+        until: until != null ? until.millisecondsSinceEpoch ~/ 1000 : null,
+        limit: limit,
+      )
+    ]);
+
+    // データがある
+    if (events != null) {
+      // autherを抽出
+      List<String> authers = List.empty(growable: true);
+      events.forEach((EventId id, EventWithRelays event) {
+        authers.add(event.event.event.pubkey);
+      });
+      var metadatas = await getMetadatas(authers);
+
+      // Note本体を取得
+      List<TextNote> notes = List.empty(growable: true);
+      events.forEach((EventId id, EventWithRelays event) {
+        var e = event.event;
+        String? nip36;
+        try {
+          nip36 = e.event.tags
+              .firstWhere((element) => element[0] == "content-warning")[1];
+        } catch (e) {
+          // Do noting
+        }
+        try {
+          var note = TextNote(
+            // --- 生データ
+            rawJson: e.json,
+            relays: event.relays,
+            // --- 基本情報
+            id: Nip19.encodeNote(e.event.id), // NIP-19
+            pubkey: Nip19.encodePubkey(e.event.pubkey), // NIP-19
+            createdAt:
+                DateTime.fromMillisecondsSinceEpoch(e.event.createdAt * 1000),
+            // --- TextNote基本情報
+            content: e.event.content,
+            tags: e.event.tags,
+            // --- TextNote付属情報
+            nip36: nip36,
+            autherMetadata: metadatas[e.event.pubkey],
+          );
+          notes.add(note);
+        } catch (e) {
+          debugPrint("[getTextNotes] $e");
+        }
+      });
+
+      return notes;
+    } else {
+      // データがない
+      return [];
+    }
   }
 
   @override
-  Future<List<Metadata>> getContactList(String pubkey) {
+  Future<List<Pubkey>> getContactList(String pubkey) {
     // TODO: implement getContactList
     throw UnimplementedError();
   }
 
   @override
-  Future<List<Metadata>> getMetadatas(List<String>? pubkeys) {
-    // TODO: implement getMetadatas
-    throw UnimplementedError();
+  Future<Map<Pubkey, Metadata>> getMetadatas(List<String>? pubkeys) async {
+    var mypubkey = await getMyPubkey();
+    if (mypubkey == null) {
+      return {};
+    }
+    pubkeys ??= [mypubkey];
+    var autherevents = await _oneshotRequest([
+      Filter(
+        kinds: [0],
+        authors: pubkeys,
+      )
+    ]);
+
+    var output = <Pubkey, Metadata>{};
+    autherevents?.forEach((EventId id, EventWithRelays e) {
+      try {
+        Map<String, dynamic> data = jsonDecode(e.event.event.content);
+        Metadata metadata = Metadata(
+          // --- 生データ
+          rawJson: e.event.json,
+          relays: e.relays,
+          // --- 基本情報
+          id: Nip19.encodeNote(e.event.event.id), // NIP-19
+          pubkey: Nip19.encodePubkey(e.event.event.pubkey), // NIP-19
+          createdAt: DateTime.fromMillisecondsSinceEpoch(
+              e.event.event.createdAt * 1000),
+          // --- Metadata情報(基本)
+          name: data["name"],
+          picture: data["picture"],
+          about: data["about"],
+          // --- Metadata情報(応用)
+          banner: data["banner"],
+          website: data["website"],
+          nip05: data["nip05"],
+          lud16: data["lud16"],
+          displayName: data["display_name"],
+        );
+        output[e.event.event.pubkey] = metadata;
+      } catch (e) {
+        debugPrint("[getMetadatas] $e");
+      }
+    });
+    return output;
   }
 
   @override

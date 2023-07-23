@@ -161,10 +161,154 @@ abstract class _Subscription implements Subscription {
 }
 
 /// @nodoc
-mixin _$ReceivingEvents {
-  Map<String, Map<String, Event>> get eventsOnRelays =>
+mixin _$EventWithJson {
+  Event get event => throw _privateConstructorUsedError;
+  String get json => throw _privateConstructorUsedError;
+
+  @JsonKey(ignore: true)
+  $EventWithJsonCopyWith<EventWithJson> get copyWith =>
       throw _privateConstructorUsedError;
-  set eventsOnRelays(Map<String, Map<String, Event>> value) =>
+}
+
+/// @nodoc
+abstract class $EventWithJsonCopyWith<$Res> {
+  factory $EventWithJsonCopyWith(
+          EventWithJson value, $Res Function(EventWithJson) then) =
+      _$EventWithJsonCopyWithImpl<$Res, EventWithJson>;
+  @useResult
+  $Res call({Event event, String json});
+}
+
+/// @nodoc
+class _$EventWithJsonCopyWithImpl<$Res, $Val extends EventWithJson>
+    implements $EventWithJsonCopyWith<$Res> {
+  _$EventWithJsonCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? event = null,
+    Object? json = null,
+  }) {
+    return _then(_value.copyWith(
+      event: null == event
+          ? _value.event
+          : event // ignore: cast_nullable_to_non_nullable
+              as Event,
+      json: null == json
+          ? _value.json
+          : json // ignore: cast_nullable_to_non_nullable
+              as String,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$_EventWithJsonCopyWith<$Res>
+    implements $EventWithJsonCopyWith<$Res> {
+  factory _$$_EventWithJsonCopyWith(
+          _$_EventWithJson value, $Res Function(_$_EventWithJson) then) =
+      __$$_EventWithJsonCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({Event event, String json});
+}
+
+/// @nodoc
+class __$$_EventWithJsonCopyWithImpl<$Res>
+    extends _$EventWithJsonCopyWithImpl<$Res, _$_EventWithJson>
+    implements _$$_EventWithJsonCopyWith<$Res> {
+  __$$_EventWithJsonCopyWithImpl(
+      _$_EventWithJson _value, $Res Function(_$_EventWithJson) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? event = null,
+    Object? json = null,
+  }) {
+    return _then(_$_EventWithJson(
+      event: null == event
+          ? _value.event
+          : event // ignore: cast_nullable_to_non_nullable
+              as Event,
+      json: null == json
+          ? _value.json
+          : json // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$_EventWithJson with DiagnosticableTreeMixin implements _EventWithJson {
+  const _$_EventWithJson({required this.event, required this.json});
+
+  @override
+  final Event event;
+  @override
+  final String json;
+
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'EventWithJson(event: $event, json: $json)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'EventWithJson'))
+      ..add(DiagnosticsProperty('event', event))
+      ..add(DiagnosticsProperty('json', json));
+  }
+
+  @override
+  bool operator ==(dynamic other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$_EventWithJson &&
+            (identical(other.event, event) || other.event == event) &&
+            (identical(other.json, json) || other.json == json));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, event, json);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$_EventWithJsonCopyWith<_$_EventWithJson> get copyWith =>
+      __$$_EventWithJsonCopyWithImpl<_$_EventWithJson>(this, _$identity);
+}
+
+abstract class _EventWithJson implements EventWithJson {
+  const factory _EventWithJson(
+      {required final Event event,
+      required final String json}) = _$_EventWithJson;
+
+  @override
+  Event get event;
+  @override
+  String get json;
+  @override
+  @JsonKey(ignore: true)
+  _$$_EventWithJsonCopyWith<_$_EventWithJson> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+mixin _$ReceivingEvents {
+  Map<String, Map<String, EventWithJson>> get eventsOnRelays =>
+      throw _privateConstructorUsedError;
+  set eventsOnRelays(Map<String, Map<String, EventWithJson>> value) =>
       throw _privateConstructorUsedError;
   DateTime get lastReceived => throw _privateConstructorUsedError;
   set lastReceived(DateTime value) => throw _privateConstructorUsedError;
@@ -181,7 +325,8 @@ abstract class $ReceivingEventsCopyWith<$Res> {
       _$ReceivingEventsCopyWithImpl<$Res, ReceivingEvents>;
   @useResult
   $Res call(
-      {Map<String, Map<String, Event>> eventsOnRelays, DateTime lastReceived});
+      {Map<String, Map<String, EventWithJson>> eventsOnRelays,
+      DateTime lastReceived});
 }
 
 /// @nodoc
@@ -204,7 +349,7 @@ class _$ReceivingEventsCopyWithImpl<$Res, $Val extends ReceivingEvents>
       eventsOnRelays: null == eventsOnRelays
           ? _value.eventsOnRelays
           : eventsOnRelays // ignore: cast_nullable_to_non_nullable
-              as Map<String, Map<String, Event>>,
+              as Map<String, Map<String, EventWithJson>>,
       lastReceived: null == lastReceived
           ? _value.lastReceived
           : lastReceived // ignore: cast_nullable_to_non_nullable
@@ -222,7 +367,8 @@ abstract class _$$_ReceivingEventsCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {Map<String, Map<String, Event>> eventsOnRelays, DateTime lastReceived});
+      {Map<String, Map<String, EventWithJson>> eventsOnRelays,
+      DateTime lastReceived});
 }
 
 /// @nodoc
@@ -243,7 +389,7 @@ class __$$_ReceivingEventsCopyWithImpl<$Res>
       eventsOnRelays: null == eventsOnRelays
           ? _value.eventsOnRelays
           : eventsOnRelays // ignore: cast_nullable_to_non_nullable
-              as Map<String, Map<String, Event>>,
+              as Map<String, Map<String, EventWithJson>>,
       lastReceived: null == lastReceived
           ? _value.lastReceived
           : lastReceived // ignore: cast_nullable_to_non_nullable
@@ -261,7 +407,7 @@ class _$_ReceivingEvents
       {required this.eventsOnRelays, required this.lastReceived});
 
   @override
-  Map<String, Map<String, Event>> eventsOnRelays;
+  Map<String, Map<String, EventWithJson>> eventsOnRelays;
   @override
   DateTime lastReceived;
 
@@ -288,12 +434,12 @@ class _$_ReceivingEvents
 
 abstract class _ReceivingEvents implements ReceivingEvents {
   factory _ReceivingEvents(
-      {required Map<String, Map<String, Event>> eventsOnRelays,
+      {required Map<String, Map<String, EventWithJson>> eventsOnRelays,
       required DateTime lastReceived}) = _$_ReceivingEvents;
 
   @override
-  Map<String, Map<String, Event>> get eventsOnRelays;
-  set eventsOnRelays(Map<String, Map<String, Event>> value);
+  Map<String, Map<String, EventWithJson>> get eventsOnRelays;
+  set eventsOnRelays(Map<String, Map<String, EventWithJson>> value);
   @override
   DateTime get lastReceived;
   set lastReceived(DateTime value);
@@ -305,7 +451,7 @@ abstract class _ReceivingEvents implements ReceivingEvents {
 
 /// @nodoc
 mixin _$EventWithRelays {
-  Event get event => throw _privateConstructorUsedError;
+  EventWithJson get event => throw _privateConstructorUsedError;
   List<String> get relays => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
@@ -319,7 +465,9 @@ abstract class $EventWithRelaysCopyWith<$Res> {
           EventWithRelays value, $Res Function(EventWithRelays) then) =
       _$EventWithRelaysCopyWithImpl<$Res, EventWithRelays>;
   @useResult
-  $Res call({Event event, List<String> relays});
+  $Res call({EventWithJson event, List<String> relays});
+
+  $EventWithJsonCopyWith<$Res> get event;
 }
 
 /// @nodoc
@@ -342,12 +490,20 @@ class _$EventWithRelaysCopyWithImpl<$Res, $Val extends EventWithRelays>
       event: null == event
           ? _value.event
           : event // ignore: cast_nullable_to_non_nullable
-              as Event,
+              as EventWithJson,
       relays: null == relays
           ? _value.relays
           : relays // ignore: cast_nullable_to_non_nullable
               as List<String>,
     ) as $Val);
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $EventWithJsonCopyWith<$Res> get event {
+    return $EventWithJsonCopyWith<$Res>(_value.event, (value) {
+      return _then(_value.copyWith(event: value) as $Val);
+    });
   }
 }
 
@@ -359,7 +515,10 @@ abstract class _$$_EventWithRelaysCopyWith<$Res>
       __$$_EventWithRelaysCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({Event event, List<String> relays});
+  $Res call({EventWithJson event, List<String> relays});
+
+  @override
+  $EventWithJsonCopyWith<$Res> get event;
 }
 
 /// @nodoc
@@ -380,7 +539,7 @@ class __$$_EventWithRelaysCopyWithImpl<$Res>
       event: null == event
           ? _value.event
           : event // ignore: cast_nullable_to_non_nullable
-              as Event,
+              as EventWithJson,
       relays: null == relays
           ? _value.relays
           : relays // ignore: cast_nullable_to_non_nullable
@@ -397,7 +556,7 @@ class _$_EventWithRelays
   const _$_EventWithRelays({required this.event, required this.relays});
 
   @override
-  final Event event;
+  final EventWithJson event;
   @override
   final List<String> relays;
 
@@ -437,11 +596,11 @@ class _$_EventWithRelays
 
 abstract class _EventWithRelays implements EventWithRelays {
   const factory _EventWithRelays(
-      {required final Event event,
+      {required final EventWithJson event,
       required final List<String> relays}) = _$_EventWithRelays;
 
   @override
-  Event get event;
+  EventWithJson get event;
   @override
   List<String> get relays;
   @override

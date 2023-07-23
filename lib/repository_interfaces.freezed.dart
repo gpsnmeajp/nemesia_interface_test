@@ -658,14 +658,14 @@ mixin _$Metadata {
   String get pubkey => throw _privateConstructorUsedError; //NIP-19
   DateTime get createdAt =>
       throw _privateConstructorUsedError; // --- Metadata情報(基本)
-  String get name => throw _privateConstructorUsedError;
-  String get picture => throw _privateConstructorUsedError;
-  String get about => throw _privateConstructorUsedError; // --- Metadata情報(応用)
-  String get banner => throw _privateConstructorUsedError;
-  String get website => throw _privateConstructorUsedError;
-  String get nip05 => throw _privateConstructorUsedError;
-  String get lud16 => throw _privateConstructorUsedError;
-  String get displayName => throw _privateConstructorUsedError;
+  String? get name => throw _privateConstructorUsedError;
+  String? get picture => throw _privateConstructorUsedError;
+  String? get about => throw _privateConstructorUsedError; // --- Metadata情報(応用)
+  String? get banner => throw _privateConstructorUsedError;
+  String? get website => throw _privateConstructorUsedError;
+  String? get nip05 => throw _privateConstructorUsedError;
+  String? get lud16 => throw _privateConstructorUsedError;
+  String? get displayName => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $MetadataCopyWith<Metadata> get copyWith =>
@@ -683,14 +683,14 @@ abstract class $MetadataCopyWith<$Res> {
       String id,
       String pubkey,
       DateTime createdAt,
-      String name,
-      String picture,
-      String about,
-      String banner,
-      String website,
-      String nip05,
-      String lud16,
-      String displayName});
+      String? name,
+      String? picture,
+      String? about,
+      String? banner,
+      String? website,
+      String? nip05,
+      String? lud16,
+      String? displayName});
 }
 
 /// @nodoc
@@ -711,14 +711,14 @@ class _$MetadataCopyWithImpl<$Res, $Val extends Metadata>
     Object? id = null,
     Object? pubkey = null,
     Object? createdAt = null,
-    Object? name = null,
-    Object? picture = null,
-    Object? about = null,
-    Object? banner = null,
-    Object? website = null,
-    Object? nip05 = null,
-    Object? lud16 = null,
-    Object? displayName = null,
+    Object? name = freezed,
+    Object? picture = freezed,
+    Object? about = freezed,
+    Object? banner = freezed,
+    Object? website = freezed,
+    Object? nip05 = freezed,
+    Object? lud16 = freezed,
+    Object? displayName = freezed,
   }) {
     return _then(_value.copyWith(
       rawJson: null == rawJson
@@ -741,38 +741,38 @@ class _$MetadataCopyWithImpl<$Res, $Val extends Metadata>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      name: null == name
+      name: freezed == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      picture: null == picture
+              as String?,
+      picture: freezed == picture
           ? _value.picture
           : picture // ignore: cast_nullable_to_non_nullable
-              as String,
-      about: null == about
+              as String?,
+      about: freezed == about
           ? _value.about
           : about // ignore: cast_nullable_to_non_nullable
-              as String,
-      banner: null == banner
+              as String?,
+      banner: freezed == banner
           ? _value.banner
           : banner // ignore: cast_nullable_to_non_nullable
-              as String,
-      website: null == website
+              as String?,
+      website: freezed == website
           ? _value.website
           : website // ignore: cast_nullable_to_non_nullable
-              as String,
-      nip05: null == nip05
+              as String?,
+      nip05: freezed == nip05
           ? _value.nip05
           : nip05 // ignore: cast_nullable_to_non_nullable
-              as String,
-      lud16: null == lud16
+              as String?,
+      lud16: freezed == lud16
           ? _value.lud16
           : lud16 // ignore: cast_nullable_to_non_nullable
-              as String,
-      displayName: null == displayName
+              as String?,
+      displayName: freezed == displayName
           ? _value.displayName
           : displayName // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
     ) as $Val);
   }
 }
@@ -790,14 +790,14 @@ abstract class _$$_MetadataCopyWith<$Res> implements $MetadataCopyWith<$Res> {
       String id,
       String pubkey,
       DateTime createdAt,
-      String name,
-      String picture,
-      String about,
-      String banner,
-      String website,
-      String nip05,
-      String lud16,
-      String displayName});
+      String? name,
+      String? picture,
+      String? about,
+      String? banner,
+      String? website,
+      String? nip05,
+      String? lud16,
+      String? displayName});
 }
 
 /// @nodoc
@@ -816,14 +816,14 @@ class __$$_MetadataCopyWithImpl<$Res>
     Object? id = null,
     Object? pubkey = null,
     Object? createdAt = null,
-    Object? name = null,
-    Object? picture = null,
-    Object? about = null,
-    Object? banner = null,
-    Object? website = null,
-    Object? nip05 = null,
-    Object? lud16 = null,
-    Object? displayName = null,
+    Object? name = freezed,
+    Object? picture = freezed,
+    Object? about = freezed,
+    Object? banner = freezed,
+    Object? website = freezed,
+    Object? nip05 = freezed,
+    Object? lud16 = freezed,
+    Object? displayName = freezed,
   }) {
     return _then(_$_Metadata(
       rawJson: null == rawJson
@@ -846,38 +846,38 @@ class __$$_MetadataCopyWithImpl<$Res>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      name: null == name
+      name: freezed == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      picture: null == picture
+              as String?,
+      picture: freezed == picture
           ? _value.picture
           : picture // ignore: cast_nullable_to_non_nullable
-              as String,
-      about: null == about
+              as String?,
+      about: freezed == about
           ? _value.about
           : about // ignore: cast_nullable_to_non_nullable
-              as String,
-      banner: null == banner
+              as String?,
+      banner: freezed == banner
           ? _value.banner
           : banner // ignore: cast_nullable_to_non_nullable
-              as String,
-      website: null == website
+              as String?,
+      website: freezed == website
           ? _value.website
           : website // ignore: cast_nullable_to_non_nullable
-              as String,
-      nip05: null == nip05
+              as String?,
+      nip05: freezed == nip05
           ? _value.nip05
           : nip05 // ignore: cast_nullable_to_non_nullable
-              as String,
-      lud16: null == lud16
+              as String?,
+      lud16: freezed == lud16
           ? _value.lud16
           : lud16 // ignore: cast_nullable_to_non_nullable
-              as String,
-      displayName: null == displayName
+              as String?,
+      displayName: freezed == displayName
           ? _value.displayName
           : displayName // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
     ));
   }
 }
@@ -923,22 +923,22 @@ class _$_Metadata with DiagnosticableTreeMixin implements _Metadata {
   final DateTime createdAt;
 // --- Metadata情報(基本)
   @override
-  final String name;
+  final String? name;
   @override
-  final String picture;
+  final String? picture;
   @override
-  final String about;
+  final String? about;
 // --- Metadata情報(応用)
   @override
-  final String banner;
+  final String? banner;
   @override
-  final String website;
+  final String? website;
   @override
-  final String nip05;
+  final String? nip05;
   @override
-  final String lud16;
+  final String? lud16;
   @override
-  final String displayName;
+  final String? displayName;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
@@ -1018,14 +1018,14 @@ abstract class _Metadata implements Metadata {
       required final String id,
       required final String pubkey,
       required final DateTime createdAt,
-      required final String name,
-      required final String picture,
-      required final String about,
-      required final String banner,
-      required final String website,
-      required final String nip05,
-      required final String lud16,
-      required final String displayName}) = _$_Metadata;
+      required final String? name,
+      required final String? picture,
+      required final String? about,
+      required final String? banner,
+      required final String? website,
+      required final String? nip05,
+      required final String? lud16,
+      required final String? displayName}) = _$_Metadata;
 
   @override // --- 生データ
   String get rawJson;
@@ -1038,21 +1038,21 @@ abstract class _Metadata implements Metadata {
   @override //NIP-19
   DateTime get createdAt;
   @override // --- Metadata情報(基本)
-  String get name;
+  String? get name;
   @override
-  String get picture;
+  String? get picture;
   @override
-  String get about;
+  String? get about;
   @override // --- Metadata情報(応用)
-  String get banner;
+  String? get banner;
   @override
-  String get website;
+  String? get website;
   @override
-  String get nip05;
+  String? get nip05;
   @override
-  String get lud16;
+  String? get lud16;
   @override
-  String get displayName;
+  String? get displayName;
   @override
   @JsonKey(ignore: true)
   _$$_MetadataCopyWith<_$_Metadata> get copyWith =>

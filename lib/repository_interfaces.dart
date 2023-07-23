@@ -18,11 +18,13 @@ profile-directoryを追加
 
 */
 
+typedef Pubkey = String;
+
 @freezed
 class Nip07Event with _$Nip07Event {
   const factory Nip07Event({
     required String id, // HEX
-    required String pubkey, //HEX
+    required Pubkey pubkey, //HEX
     // ignore: non_constant_identifier_names
     required int created_at,
     required int kind,
@@ -42,7 +44,7 @@ abstract class TextNote with _$TextNote {
     required List<String> relays,
     // --- 基本情報
     required String id, // NIP-19
-    required String pubkey, //NIP-19
+    required Pubkey pubkey, //NIP-19
     required DateTime createdAt,
     // --- TextNote基本情報
     required String content,
@@ -61,18 +63,18 @@ abstract class Metadata with _$Metadata {
     required List<String> relays,
     // --- 基本情報
     required String id, // NIP-19
-    required String pubkey, //NIP-19
+    required Pubkey pubkey, //NIP-19
     required DateTime createdAt,
     // --- Metadata情報(基本)
-    required String name,
-    required String picture,
-    required String about,
+    required String? name,
+    required String? picture,
+    required String? about,
     // --- Metadata情報(応用)
-    required String banner,
-    required String website,
-    required String nip05,
-    required String lud16,
-    required String displayName,
+    required String? banner,
+    required String? website,
+    required String? nip05,
+    required String? lud16,
+    required String? displayName,
   }) = _Metadata;
 }
 
@@ -97,7 +99,7 @@ abstract class Reaction with _$Reaction {
     required List<String> relays,
     // --- 基本情報
     required String id, // NIP-19
-    required String pubkey, //NIP-19
+    required Pubkey pubkey, //NIP-19
     required DateTime createdAt,
     // --- Reaction情報
     required String content,
@@ -141,36 +143,36 @@ class RelayRepositoryInterface {
 
   // 指定のメモ(あるいはタイムライン)を取得する
   // NIP-01, kind 1
-  Future<List<TextNote>> getTextNotes(
-    List<String>? ids, // NIP-19
-    List<String>? authers, //NIP-19
+  Future<List<TextNote>> getTextNotes({
+    List<String>? ids,
+    List<String>? authers,
     List<String>? e,
     List<String>? p,
     DateTime? since,
     DateTime? until,
     int? limit,
-  ) async {
+  }) async {
     throw UnimplementedError();
   }
 
   // 指定のプロフィールを取得する(認識できない情報は生jsonに含まれる)
   // NIP-01, kind 0
   // pubkey: NIP-19
-  Future<List<Metadata>> getMetadatas(List<String>? pubkeys) async {
+  Future<Map<Pubkey, Metadata>> getMetadatas(List<Pubkey>? pubkeys) async {
     throw UnimplementedError();
   }
 
   // 指定のフォローリストを取得する
   // NIP-02, kind 3
   // pubkey: NIP-19
-  Future<List<Metadata>> getContactList(String pubkey) async {
+  Future<List<Pubkey>> getContactList(Pubkey pubkey) async {
     throw UnimplementedError();
   }
 
   // 指定の推奨リレーリストを取得する
   // NIP-01, kind 2
   // pubkey: NIP-19
-  Future<List<RecommendServer>> getRecommendServer(String pubkey) async {
+  Future<List<RecommendServer>> getRecommendServer(Pubkey pubkey) async {
     throw UnimplementedError();
   }
 
