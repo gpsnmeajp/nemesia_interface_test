@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:metadata_fetch/metadata_fetch.dart';
 part 'repository_interfaces.freezed.dart';
 part 'repository_interfaces.g.dart';
 // flutter pub run build_runner build --delete-conflicting-outputs
@@ -15,7 +17,6 @@ Flutter SDKのchrome.dartを開き
 --user-data-dir=${userDataDir.path}　を自分のプロファイルに変更
 --disable-extensions　をコメントアウト
 profile-directoryを追加
-
 */
 
 typedef Pubkey = String;
@@ -77,19 +78,6 @@ abstract class Metadata with _$Metadata {
     required String? displayName,
   }) = _Metadata;
 }
-
-/*
-{
-    "banner": "https://www.gravatar.com/avatar/19606b92a428ca0fed7fe5291bcfd865?",
-    "website": "https://ja.gravatar.com/gpsnmeajp",
-    "nip05": "_@sabowl.sakura.ne.jp",
-    "picture": "https://www.gravatar.com/avatar/19606b92a428ca0fed7fe5291bcfd865?",
-    "lud16": "nervoustent17@walletofsatoshi.com",
-    "display_name": "Segment(gpsnmeajp)",
-    "about": "日本ユーザーを探すには: Nostr検索ポータル https://nostr.hoku.in が便利です。n---nEVMC4UやVaNiiMenu、VMCProtocolなど作ってました。フォロー解除はお気軽に。ツールのサポートは各discordへn---n「ハマりすぎる」ので不定期にいなくなります。お手数ですが反応がない時は別の連絡手段を使用してください。nまた、DMなどは気づかないことがあります。",
-    "name": "gpsnmeajp"
-}
-*/
 
 @freezed
 abstract class Reaction with _$Reaction {
@@ -173,9 +161,11 @@ class RelayRepositoryInterface {
   // 指定の推奨リレーリストを取得する
   // NIP-01, kind 2
   // pubkey: NIP-19
+  /*
   Future<List<RecommendServer>> getRecommendServer(Pubkey pubkey) async {
     throw UnimplementedError();
   }
+  */
 
   // メモを投稿する
   // NIP-01, kind 1
@@ -185,15 +175,21 @@ class RelayRepositoryInterface {
 
   // 自己プロフィールを投稿する(認識できない情報は生jsonに含まれているためそれを使用する)
   // NIP-01, kind 0
+  /*
   Future<void> postMyMetadata(Metadata metadata) async {
     throw UnimplementedError();
   }
+  */
 
   // リアクションを投稿する
   // NIP-25, kind 7
   // noteId: NIP-19
-  Future<void> postReaction(
-      String noteId, String? reaction, String? emojiUrl) async {
+  Future<void> postReaction({
+    required Pubkey pubkey,
+    required String noteId,
+    required String reaction,
+    String? emojiUrl,
+  }) async {
     throw UnimplementedError();
   }
 
@@ -208,22 +204,56 @@ class RelayRepositoryInterface {
 abstract class OPGMetaData with _$OPGMetaData {
   const factory OPGMetaData({
     required String title,
-    required Uint8List image,
+    required Uint8List? image,
   }) = _OPGMetaData;
 }
+
+// データキャッシュ
+Map<String, OPGMetaData> _opgMetaDataCache = {};
+Map<String, Uint8List> _imageDataCache = {};
 
 // OGPメタ情報を取得するためのIF
 class OGPMetadataInterface {
   // OGP Metadataを取得します(キャッシュあり)
-  Future<OPGMetaData> getMetaDataFromURL(String url) async {
-    throw UnimplementedError();
+  Future<OPGMetaData?> getMetaDataFromURL(String url) async {
+    if (_opgMetaDataCache[url] != null) {
+      return _opgMetaDataCache[url];
+    }
+
+    OPGMetaData? ogp;
+    try {
+      var ogpRes = await MetadataFetch.extract(url);
+      var ogpImageUrl = ogpRes?.image;
+      var ogpText = ogpRes?.title ?? "";
+
+      Uint8List? data;
+      if (ogpImageUrl != null) {
+        data = (await http.get(Uri.parse(ogpImageUrl))).bodyBytes;
+      }
+      ogp = OPGMetaData(title: ogpText, image: data);
+      _opgMetaDataCache[url] = ogp;
+    } catch (e) {
+      // Do noting
+    }
+
+    return ogp;
   }
 }
 
 // ネットワーク上から画像を取得するためのIF
 class FetchImageInterface {
   // ネットワーク上から画像を取得します(キャッシュあり)
-  Future<Uint8List> getImageFromURL(String url) async {
-    throw UnimplementedError();
+  Future<Uint8List?> getImageFromURL(String url) async {
+    if (_imageDataCache[url] != null) {
+      return _imageDataCache[url];
+    }
+    Uint8List? data;
+    try {
+      data = (await http.get(Uri.parse(url))).bodyBytes;
+      _imageDataCache[url] = data;
+    } catch (e) {
+      // Do noting
+    }
+    return data;
   }
 }

@@ -1550,7 +1550,7 @@ abstract class _RecommendServer implements RecommendServer {
 /// @nodoc
 mixin _$OPGMetaData {
   String get title => throw _privateConstructorUsedError;
-  Uint8List get image => throw _privateConstructorUsedError;
+  Uint8List? get image => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $OPGMetaDataCopyWith<OPGMetaData> get copyWith =>
@@ -1563,7 +1563,7 @@ abstract class $OPGMetaDataCopyWith<$Res> {
           OPGMetaData value, $Res Function(OPGMetaData) then) =
       _$OPGMetaDataCopyWithImpl<$Res, OPGMetaData>;
   @useResult
-  $Res call({String title, Uint8List image});
+  $Res call({String title, Uint8List? image});
 }
 
 /// @nodoc
@@ -1580,17 +1580,17 @@ class _$OPGMetaDataCopyWithImpl<$Res, $Val extends OPGMetaData>
   @override
   $Res call({
     Object? title = null,
-    Object? image = null,
+    Object? image = freezed,
   }) {
     return _then(_value.copyWith(
       title: null == title
           ? _value.title
           : title // ignore: cast_nullable_to_non_nullable
               as String,
-      image: null == image
+      image: freezed == image
           ? _value.image
           : image // ignore: cast_nullable_to_non_nullable
-              as Uint8List,
+              as Uint8List?,
     ) as $Val);
   }
 }
@@ -1603,7 +1603,7 @@ abstract class _$$_OPGMetaDataCopyWith<$Res>
       __$$_OPGMetaDataCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String title, Uint8List image});
+  $Res call({String title, Uint8List? image});
 }
 
 /// @nodoc
@@ -1618,17 +1618,17 @@ class __$$_OPGMetaDataCopyWithImpl<$Res>
   @override
   $Res call({
     Object? title = null,
-    Object? image = null,
+    Object? image = freezed,
   }) {
     return _then(_$_OPGMetaData(
       title: null == title
           ? _value.title
           : title // ignore: cast_nullable_to_non_nullable
               as String,
-      image: null == image
+      image: freezed == image
           ? _value.image
           : image // ignore: cast_nullable_to_non_nullable
-              as Uint8List,
+              as Uint8List?,
     ));
   }
 }
@@ -1641,7 +1641,7 @@ class _$_OPGMetaData with DiagnosticableTreeMixin implements _OPGMetaData {
   @override
   final String title;
   @override
-  final Uint8List image;
+  final Uint8List? image;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
@@ -1680,12 +1680,12 @@ class _$_OPGMetaData with DiagnosticableTreeMixin implements _OPGMetaData {
 abstract class _OPGMetaData implements OPGMetaData {
   const factory _OPGMetaData(
       {required final String title,
-      required final Uint8List image}) = _$_OPGMetaData;
+      required final Uint8List? image}) = _$_OPGMetaData;
 
   @override
   String get title;
   @override
-  Uint8List get image;
+  Uint8List? get image;
   @override
   @JsonKey(ignore: true)
   _$$_OPGMetaDataCopyWith<_$_OPGMetaData> get copyWith =>

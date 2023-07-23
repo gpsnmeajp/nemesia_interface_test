@@ -282,7 +282,9 @@ class RelayRepository implements RelayRepositoryInterface {
 
         // イベントをリレー別バッファに詰める
         _eventBuffer[e.subscriptionId!]!.eventsOnRelays[relayUrl]![e.id] =
-            EventWithJson(event: e, json: data[1]);
+            EventWithJson(
+                event: e,
+                json: jsonEncode(data[2])); // [1]にはsubscription IDがあるので
         _eventBuffer[e.subscriptionId!]!.lastReceived = DateTime.now();
         debugPrint("OK ${e.subscriptionId}");
         return;
@@ -341,11 +343,17 @@ class RelayRepository implements RelayRepositoryInterface {
       int kind, List<List<String>> tags, String content) async {
     debugPrint("[signAndSend] Start");
 
+    var pubkey = await getMyPubkey();
+    if (pubkey == null) {
+      throw Error();
+    }
+
     Event event = Event.partial();
     event.createdAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     event.content = content;
     event.kind = kind;
     event.tags = tags;
+    event.pubkey = Nip19.decodePubkey(pubkey);
 
     if (keychain == null) {
       Nip07Event nip07 = Nip07Event(
@@ -358,12 +366,13 @@ class RelayRepository implements RelayRepositoryInterface {
         tags: event.tags,
       );
 
-      event.pubkey = (await Nip07.getPublicKey())!;
       var result = await Nip07.signEvent(nip07);
-      event.id = result!.id;
+      if (result == null) {
+        throw Error();
+      }
+      event.id = result.id;
       event.sig = result.sig;
     } else {
-      event.pubkey = keychain!.public;
       event.id = event.getEventId();
       event.sig = event.getSignature(keychain!.private);
     }
@@ -621,37 +630,36 @@ class RelayRepository implements RelayRepositoryInterface {
   }
 
   @override
-  Future<List<RecommendServer>> getRecommendServer(String pubkey) {
-    debugPrint("[getRecommendServer] Start");
-    // TODO: implement getRecommendServer
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<void> postMyMetadata(Metadata metadata) {
-    debugPrint("[postMyMetadata] Start");
-    // TODO: implement postMyMetadata
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<void> postMyTextNote(String content, List<List<String>> tags) {
+  Future<void> postMyTextNote(String content, List<List<String>> tags) async {
     debugPrint("[postMyTextNote] Start");
-    // TODO: implement postMyTextNote
-    throw UnimplementedError();
+    await signAndSend(1, tags, content);
   }
 
   @override
-  Future<void> postReaction(String noteId, String? reaction, String? emojiUrl) {
+  Future<void> postReaction({
+    required Pubkey pubkey, //NIP-19
+    required String noteId, //NIP-19
+    required String reaction,
+    String? emojiUrl,
+  }) async {
     debugPrint("[postReaction] Start");
-    // TODO: implement postReaction
-    throw UnimplementedError();
+    List<List<String>> tags = List.empty(growable: true);
+    tags.add(["e", Nip19.decodeNote(noteId)]);
+    tags.add(["p", Nip19.decodePubkey(pubkey)]);
+    if (emojiUrl != null) {
+      tags.add(["emoji", reaction.replaceAll(":", ""), emojiUrl]);
+    }
+    await signAndSend(7, tags, reaction);
   }
 
   @override
-  Future<void> postRepost(TextNote textNote) {
+  Future<void> postRepost(TextNote textNote) async {
     debugPrint("[postRepost] Start");
-    // TODO: implement postRepost
-    throw UnimplementedError();
+    await signAndSend(
+        6,
+        [
+          ["e", Nip19.decodeNote(textNote.id), textNote.relays[0]]
+        ],
+        textNote.rawJson);
   }
 }

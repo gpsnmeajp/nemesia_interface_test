@@ -23,11 +23,14 @@ class Model extends ChangeNotifier {
       debugPrint("↓フォロー");
       var notes =
           await _relayRepository.getTextNotes(limit: 10, authers: pubkeys);
+      late var x;
       for (var note in notes) {
         debugPrint("---");
         debugPrint(
-            "${note.autherMetadata?.displayName ?? ""}: ${note.content}");
+            "${note.autherMetadata?.displayName ?? ""}: ${note.content} ${note.rawJson}");
+        x = note;
       }
+      await _relayRepository.postRepost(x);
       debugPrint("↓グローバル");
       var notesg = await _relayRepository.getTextNotes(limit: 10);
       for (var note in notesg) {
@@ -35,6 +38,17 @@ class Model extends ChangeNotifier {
         debugPrint(
             "${note.autherMetadata?.displayName ?? ""}: ${note.content}");
       }
+
+      //await _relayRepository.postMyTextNote("content", []);
+      /*
+      await _relayRepository.postReaction(
+          pubkey:
+              "npub1yg6m89jp5t3w64e8n2nyd8vezt3gc8c05jylleht9v0x30zlx8fqqsydgh",
+          noteId:
+              "note1t5f2dnr07csn7wk2e59exjr8unyksshkd6nv8gcrtc8zchgrru5sx6s8tl",
+          reaction: ":soapbox:",
+          emojiUrl: "https://gleasonator.com/emoji/Gleasonator/soapbox.png");
+          */
     });
   }
 }
